@@ -1,186 +1,70 @@
-import { Feather, FontAwesome } from '@expo/vector-icons';
-import React from 'react';
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  View
-} from 'react-native';
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { isAuthenticated } from "../service/authService";
+import { NavigationActions } from "../navigation";
 
-const stories = [
-  { id: '1', name: 'Your Story', image: 'https://i.imgur.com/2nCt3Sb.jpg' },
-  { id: '2', name: 'karenne', image: 'https://i.imgur.com/8Km9tLL.jpg' },
-  { id: '3', name: 'zackjohn', image: 'https://i.imgur.com/6VBx3io.jpg' },
-  { id: '4', name: 'kieron_d', image: 'https://i.imgur.com/jNNT4LE.jpg' },
-];
+/**
+ * Root Index - Auth Guard
+ * Kiểm tra trạng thái đăng nhập và redirect đến đúng màn hình
+ * - Nếu đã đăng nhập: redirect đến (tabs)
+ * - Nếu chưa đăng nhập: redirect đến /auth/login
+ *
+ * Sử dụng router.replace() để reset stack và không cho phép back
+ *
+ * Flow:
+ * 1. App khởi động -> index.tsx
+ * 2. Kiểm tra token
+ * 3. Redirect đến đúng flow (auth hoặc main)
+ * 4. Component này sẽ unmount sau khi redirect
+ */
+export default function Index() {
+  const [loading, setLoading] = useState(true);
 
-const posts = [
-  {
-    id: '1',
-    user: 'joshua_l',
-    location: 'Tokyo, Japan',
-    image: 'https://i.imgur.com/6L89SxQ.jpg',
-    likes: 44686,
-    caption:
-      'The game in Japan was amazing and I want to share some photos',
-  },
-];
+  useEffect(() => {
+    checkAuthAndRedirect();
+  }, []);
 
-export default function HomeScreen() {
-  const renderStory = ({ item }: any) => (
-    <View style={styles.storyItem}>
-      <View style={styles.storyBorder}>
-        <Image source={{ uri: item.image }} style={styles.storyImage} />
+  const checkAuthAndRedirect = async () => {
+    try {
+      const authenticated = await isAuthenticated();
+
+      if (authenticated) {
+        // Đã đăng nhập - reset stack và vào main app
+        console.log("User authenticated, redirecting to main app");
+        NavigationActions.resetToMain();
+      } else {
+        // Chưa đăng nhập - reset stack và vào auth flow
+        console.log("User not authenticated, redirecting to login");
+        NavigationActions.resetToAuth();
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      // Lỗi - mặc định redirect đến login để an toàn
+      NavigationActions.resetToAuth();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Loading screen trong khi kiểm tra auth
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#3797EF" />
       </View>
-      <Text style={styles.storyName}>{item.name}</Text>
-    </View>
-  );
+    );
+  }
 
-  const renderPost = ({ item }: any) => (
-    <View style={styles.postContainer}>
-      {/* Header */}
-      <View style={styles.postHeader}>
-        <View style={styles.postUser}>
-          <Image
-            source={{ uri: 'https://i.imgur.com/2nCt3Sb.jpg' }}
-            style={styles.userAvatar}
-          />
-          <View>
-            <Text style={styles.username}>{item.user}</Text>
-            <Text style={styles.location}>{item.location}</Text>
-          </View>
-        </View>
-        <Feather name="more-vertical" size={20} />
-      </View>
-
-      {/* Hình ảnh bài đăng */}
-      <Image source={{ uri: item.image }} style={styles.postImage} />
-
-      {/* Action icons */}
-      <View style={styles.actionRow}>
-        <View style={styles.leftActions}>
-          <FontAwesome name="heart-o" size={24} style={styles.icon} />
-          <Feather name="message-circle" size={24} style={styles.icon} />
-          <Feather name="send" size={24} />
-        </View>
-        <Feather name="bookmark" size={24} />
-      </View>
-
-      {/* Likes */}
-      <Text style={styles.likes}>
-        Liked by <Text style={styles.bold}>craig_love</Text> and{' '}
-        <Text style={styles.bold}>{item.likes} others</Text>
-      </Text>
-
-      {/* Caption */}
-      <Text style={styles.caption}>
-        <Text style={styles.bold}>{item.user}</Text> {item.caption}
-      </Text>
-    </View>
-  );
-
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>Instagram</Text>
-        <View style={styles.headerIcons}>
-          <Feather name="heart" size={24} style={styles.headerIcon} />
-          <Feather name="message-circle" size={24} />
-        </View>
-      </View>
-
-      {/* Stories */}
-      <View style={styles.storiesContainer}>
-        <FlatList
-          horizontal
-          data={stories}
-          renderItem={renderStory}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-        />
-      </View>
-
-      {/* Posts */}
-      <FlatList
-        data={posts}
-        renderItem={renderPost}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
-  );
+  // Component này sẽ unmount sau khi redirect
+  // Trả về null để tránh flash content
+  return null;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 50,
-    paddingBottom: 10,
-    borderBottomWidth: 0.3,
-    borderBottomColor: '#ddd',
+const styles = {
+  container: {
+    flex: 1,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: "#fff",
   },
-  logo: {
-    fontSize: 32,
-    fontFamily: 'Billabong', // font giống Instagram
-  },
-  headerIcons: { flexDirection: 'row' },
-  headerIcon: { marginRight: 15 },
-  storiesContainer: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#eee',
-    paddingVertical: 10,
-  },
-  storyItem: { alignItems: 'center', marginHorizontal: 8 },
-  storyBorder: {
-    borderWidth: 2,
-    borderColor: '#FF0066',
-    borderRadius: 45,
-    padding: 3,
-  },
-  storyImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  storyName: {
-    fontSize: 12,
-    marginTop: 4,
-    color: '#333',
-  },
-  postContainer: {
-    marginBottom: 20,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
-  postUser: { flexDirection: 'row', alignItems: 'center' },
-  userAvatar: { width: 35, height: 35, borderRadius: 18, marginRight: 10 },
-  username: { fontWeight: 'bold', fontSize: 14 },
-  location: { fontSize: 12, color: '#666' },
-  postImage: {
-    width: '100%',
-    height: 400,
-    marginTop: 10,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  leftActions: { flexDirection: 'row' },
-  icon: { marginRight: 12 },
-  likes: { paddingHorizontal: 12, fontWeight: '500', marginBottom: 5 },
-  caption: { paddingHorizontal: 12, marginBottom: 10 },
-  bold: { fontWeight: 'bold' },
-});
+};

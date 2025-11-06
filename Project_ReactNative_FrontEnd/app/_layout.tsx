@@ -1,66 +1,86 @@
-import { Feather, FontAwesome, FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Stack } from "expo-router";
+import React from "react";
 
-export default function _layout() {
+/**
+ * Root Layout - Quản lý toàn bộ navigation của app
+ * Expo Router tự động quản lý NavigationContainer
+ *
+ * Cấu trúc:
+ * - index.tsx: Auth guard - kiểm tra token và redirect
+ * - auth/*: Auth stack (login, register)
+ * - (tabs)/*: Main tabs (home, search, post, like, profile)
+ * - Các màn hình độc lập khác
+ *
+ * QUAN TRỌNG:
+ * - Chỉ có một NavigationContainer (tự động bởi Expo Router)
+ * - Sử dụng router.replace() để reset stack khi login/logout
+ * - Gesture navigation được điều khiển theo từng màn hình
+ */
+export default function RootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: "black",
-        tabBarInactiveTintColor: "gray",
-      }}
-    >
-      {/* Danh sách các trang sử dụng tab */}
-      <Tabs.Screen
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Auth guard - kiểm tra token và redirect */}
+      <Stack.Screen
         name="index"
         options={{
-          title: "",
-          tabBarIcon: ({ color }) => {
-            return <FontAwesome name="home" size={24} color={color} />;
-          },
+          headerShown: false,
+          gestureEnabled: false, // Không cho phép swipe back
         }}
       />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "",
 
-          tabBarIcon: ({ color }) => {
-            return <Feather name="search" size={24} color={color} />
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="post"
+      {/* Auth stack - Chỉ accessible khi chưa đăng nhập */}
+      <Stack.Screen
+        name="auth/login"
         options={{
-          title: "",
-
-          tabBarIcon: ({ color }) => {
-            return <FontAwesome6 name="add" size={24} color={color} />
-          },
+          headerShown: false,
+          gestureEnabled: false, // Không cho phép swipe back từ login
         }}
       />
-      <Tabs.Screen
+      <Stack.Screen
+        name="auth/register"
+        options={{
+          headerShown: false,
+          gestureEnabled: true, // Cho phép back từ register về login
+        }}
+      />
+
+      {/* Main tabs - Chỉ accessible khi đã đăng nhập */}
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          headerShown: false,
+          gestureEnabled: false, // Không cho phép swipe back về auth
+        }}
+      />
+
+      {/* Các màn hình độc lập - Có thể navigate từ bất kỳ đâu */}
+      <Stack.Screen name="igtv" options={{ headerShown: false }} />
+      <Stack.Screen name="pictureShot" options={{ headerShown: false }} />
+      <Stack.Screen name="addImage" options={{ headerShown: false }} />
+      <Stack.Screen name="show" options={{ headerShown: false }} />
+      <Stack.Screen name="story" options={{ headerShown: false }} />
+
+      {/* 
+        DEPRECATED/COMPATIBILITY ROUTES:
+        Các routes này đã được tích hợp vào tabs nhưng giữ lại để:
+        1. Deep links compatibility
+        2. Redirect về tabs thay vì hiển thị trực tiếp
+        3. Tránh navigation errors
+      */}
+      <Stack.Screen
         name="like"
         options={{
-          title: "",
-          tabBarIcon: ({ color }) => {
-            return (
-              <FontAwesome name="heart-o" size={24} color={color} /> 
-              // <FontAwesome name="heart" size={24} color="black" />
-            );
-          },
+          headerShown: false,
+          // Route này sẽ redirect về tabs/like
         }}
       />
-      <Tabs.Screen
+      <Stack.Screen
         name="profile"
         options={{
-          title: "",
-          tabBarIcon: ({ color }) => {
-            return <MaterialCommunityIcons name="account" size={24} color={color} />;
-          },
+          headerShown: false,
+          // Route này sẽ redirect về tabs/profile
         }}
       />
-    </Tabs>
-  )
+    </Stack>
+  );
 }

@@ -17,6 +17,7 @@ public class User {
     private String username;
     private String email;
     private String password;
+    private String phone;
     private String avatarUrl;
     private String bio;
 
@@ -76,6 +77,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getAvatarUrl() {

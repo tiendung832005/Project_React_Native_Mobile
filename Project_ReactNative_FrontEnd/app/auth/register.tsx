@@ -1,73 +1,174 @@
-import { FontAwesome } from '@expo/vector-icons'; // nếu dùng Expo
+import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { register, RegisterData } from '../../service/authService';
 
 export default function RegisterScreen() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleRegister = async () => {
+    // Validation
+    if (!username || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data: RegisterData = {
+        username,
+        email,
+        password,
+        confirmPassword,
+      };
+      await register(data);
+      Alert.alert('Success', 'Account created successfully! Please login.', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/auth/login'),
+        },
+      ]);
+    } catch (error: any) {
+      Alert.alert(
+        'Registration Failed',
+        error.response?.data?.message || error.message || 'Registration failed. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Logo Instagram */}
-      <Text style={styles.logo}>Instagram</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Logo Instagram */}
+        <Text style={styles.logo}>Instagram</Text>
 
-      {/* Ô nhập Username */}
-      <TextInput
-        style={styles.input}
-        placeholder="Phone number, username, or email"
-        placeholderTextColor="#999"
-        value={username}
-        onChangeText={setUsername}
-      />
+        {/* Input Fields */}
+        <View style={styles.contentWrapper}>
+          <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            placeholderTextColor="#999"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoComplete="username"
+          />
 
-      {/* Ô nhập Password */}
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#999"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#999"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+          />
 
-      {/* Quên mật khẩu */}
-      <TouchableOpacity style={styles.forgotContainer}>
-        <Text style={styles.forgotText}>Forgot password?</Text>
-      </TouchableOpacity>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              placeholderTextColor="#999"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+              autoComplete="password"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <FontAwesome
+                name={showPassword ? 'eye' : 'eye-slash'}
+                size={18}
+                color="#999"
+              />
+            </TouchableOpacity>
+          </View>
 
-      {/* Nút đăng nhập */}
-      <TouchableOpacity style={styles.loginButton}>
-        <Text style={styles.loginText}>Log in</Text>
-      </TouchableOpacity>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Confirm Password"
+              placeholderTextColor="#999"
+              secureTextEntry={!showConfirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+              autoComplete="password"
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={styles.eyeIcon}
+            >
+              <FontAwesome
+                name={showConfirmPassword ? 'eye' : 'eye-slash'}
+                size={18}
+                color="#999"
+              />
+            </TouchableOpacity>
+          </View>
 
-      {/* Nút đăng nhập bằng Facebook */}
-      <TouchableOpacity style={styles.facebookButton}>
-        <FontAwesome name="facebook-square" size={20} color="#3797EF" />
-        <Text style={styles.facebookText}> Log in with Facebook</Text>
-      </TouchableOpacity>
+          {/* Sign up button */}
+          <TouchableOpacity
+            style={[styles.signUpButton, loading && styles.signUpButtonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.signUpText}>Sign Up</Text>
+            )}
+          </TouchableOpacity>
+          </View>
+        </View>
 
-      {/* Dòng kẻ OR */}
-      <View style={styles.dividerContainer}>
-        <View style={styles.line} />
-        <Text style={styles.orText}>OR</Text>
-        <View style={styles.line} />
-      </View>
-
-      {/* Footer: tạo tài khoản */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Don’t have an account? </Text>
-        <Text style={styles.signUp}>Sign up.</Text>
-      </View>
-
-      {/* Dòng nhỏ cuối */}
-      <Text style={styles.bottomText}>Instagram or Facebook</Text>
-    </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => router.replace('/auth/login')}>
+            <Text style={styles.loginLink}>Log in.</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -75,14 +176,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 40,
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 380,
+    alignSelf: 'center',
   },
   logo: {
     fontSize: 42,
     fontFamily: 'Billabong',
+    textAlign: 'center',
     marginBottom: 40,
+    color: '#000',
+  },
+  inputContainer: {
+    width: '100%',
   },
   input: {
     width: '100%',
@@ -93,69 +207,60 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     paddingHorizontal: 12,
     marginBottom: 10,
+    fontSize: 14,
+    color: '#000',
   },
-  forgotContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 15,
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    marginBottom: 10,
   },
-  forgotText: {
-    color: '#3797EF',
-    fontSize: 13,
+  passwordInput: {
+    flex: 1,
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    backgroundColor: '#fafafa',
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#000',
   },
-  loginButton: {
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+  },
+  signUpButton: {
     backgroundColor: '#3797EF',
     paddingVertical: 12,
     borderRadius: 8,
     width: '100%',
     alignItems: 'center',
-    marginBottom: 15,
+    marginTop: 10,
+    marginBottom: 20,
   },
-  loginText: {
+  signUpButtonDisabled: {
+    opacity: 0.6,
+  },
+  signUpText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
   },
-  facebookButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  facebookText: {
-    color: '#3797EF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 25,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ddd',
-  },
-  orText: {
-    marginHorizontal: 10,
-    color: '#999',
-    fontWeight: '500',
-  },
   footer: {
     flexDirection: 'row',
-    marginBottom: 60,
+    justifyContent: 'center',
+    marginTop: 'auto',
   },
   footerText: {
     color: '#999',
+    fontSize: 14,
   },
-  signUp: {
-    color: '#000',
+  loginLink: {
+    color: '#3797EF',
     fontWeight: '600',
-  },
-  bottomText: {
-    position: 'absolute',
-    bottom: 20,
-    color: '#999',
-    fontSize: 12,
+    fontSize: 14,
   },
 });
