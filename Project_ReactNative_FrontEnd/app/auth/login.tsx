@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { login, LoginData } from "../../service/authService";
+import { AuthDebugger } from "../../service/authDebugger";
 import { NavigationActions } from "../../navigation";
 
 export default function LoginScreen() {
@@ -29,20 +30,54 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      console.log("🚀 Starting login process...");
+      console.log("📧 Email:", email);
+      console.log("🔗 API URL:", "http://192.168.1.237:8080/api");
+
       const data: LoginData = { email, password };
-      await login(data);
+      const response = await login(data);
+
+      console.log("✅ Login successful!");
+      console.log("🔑 Token received:", response.token ? "Yes" : "No");
+
+      // Debug check after login
+      setTimeout(() => {
+        AuthDebugger.fullDebugCheck();
+      }, 1000);
 
       // Login thành công - reset stack để vào main app
-      // Sử dụng NavigationActions để đảm bảo proper reset
       console.log("Login successful, redirecting to main app");
       NavigationActions.resetToMain();
     } catch (error: any) {
-      Alert.alert(
-        "Login Failed",
-        error.response?.data?.message ||
-          error.message ||
-          "Invalid email or password"
-      );
+      console.error("❌ Login failed:", error);
+      console.log("📡 Error details:", {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+        },
+      });
+
+      let errorMessage = "Invalid email or password";
+
+      if (error.response?.status === 401) {
+        errorMessage =
+          "Invalid email or password. Please check your credentials.";
+      } else if (error.response?.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (
+        error.code === "NETWORK_ERROR" ||
+        error.message.includes("Network Error")
+      ) {
+        errorMessage =
+          "Cannot connect to server. Please check your internet connection.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      Alert.alert("Login Failed", errorMessage);
     } finally {
       setLoading(false);
     }

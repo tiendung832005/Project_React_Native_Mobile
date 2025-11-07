@@ -10,12 +10,15 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { updateProfile, UpdateProfileData } from "../../../service/authService";
 import {
   getUserProfile,
   updateProfileLocally,
 } from "../../../service/profileStorage";
+import { PostService } from "../../../service/postService";
 
 type Profile = {
   name: string;
@@ -32,6 +35,7 @@ export default function TabsEditProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [profile, setProfile] = useState<Profile>({
     name: "",
     username: "",
@@ -85,6 +89,134 @@ export default function TabsEditProfileScreen() {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleChangeAvatar = async () => {
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "We need access to your photos to change your profile picture."
+        );
+        return;
+      }
+
+      // Show options
+      Alert.alert(
+        "Change Profile Photo",
+        "Choose an option",
+        [
+          {
+            text: "Camera",
+            onPress: async () => {
+              const { status: cameraStatus } =
+                await ImagePicker.requestCameraPermissionsAsync();
+              if (cameraStatus === "granted") {
+                const result = await ImagePicker.launchCameraAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  allowsEditing: true,
+                  aspect: [1, 1],
+                  quality: 0.8,
+                });
+
+                if (!result.canceled && result.assets[0]) {
+                  await uploadAvatar(result.assets[0].uri);
+                }
+              }
+            },
+          },
+          {
+            text: "Photo Library",
+            onPress: async () => {
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
+
+              if (!result.canceled && result.assets[0]) {
+                await uploadAvatar(result.assets[0].uri);
+              }
+            },
+          },
+          { text: "Cancel", style: "cancel" },
+        ],
+        { cancelable: true }
+      );
+    } catch (error: any) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image. Please try again.");
+    }
+  };
+
+  const uploadAvatar = async (imageUri: string) => {
+    try {
+      setUploadingAvatar(true);
+      
+      // Upload image first
+      const uploadedUrl = await PostService.uploadImage(imageUri);
+      
+      // Update profile with new avatar URL
+      setProfile((prev) => ({ ...prev, avatar: uploadedUrl }));
+      
+      // Save immediately
+      const updateData: UpdateProfileData = {
+        avatarUrl: uploadedUrl,
+        bio: profile.bio,
+      };
+
+      try {
+        const response = await updateProfile(updateData);
+        // Update local storage with correct format
+        await updateProfileLocally({
+          avatarUrl: uploadedUrl,
+          bio: profile.bio,
+        });
+        
+        // Also update the profile state immediately
+        setProfile((prev) => ({ ...prev, avatar: uploadedUrl }));
+        
+        Alert.alert("Success", "Profile photo updated successfully!", [
+          {
+            text: "OK",
+            onPress: () => {
+              // Force refresh profile screen when going back
+              router.back();
+            },
+          },
+        ]);
+      } catch (apiError) {
+        // API failed, save locally
+        await updateProfileLocally({
+          avatarUrl: uploadedUrl,
+          bio: profile.bio,
+        });
+        
+        // Update the profile state immediately
+        setProfile((prev) => ({ ...prev, avatar: uploadedUrl }));
+        
+        Alert.alert(
+          "Saved Offline",
+          "Profile photo updated locally. Changes will sync when connected to internet.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                router.back();
+              },
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      Alert.alert("Error", error.message || "Failed to upload profile photo.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -93,6 +225,7 @@ export default function TabsEditProfileScreen() {
         username: profile.username,
         website: profile.website,
         bio: profile.bio,
+        avatarUrl: profile.avatar,
         email: profile.email,
         phone: profile.phone,
         gender: profile.gender,
@@ -165,13 +298,41 @@ export default function TabsEditProfileScreen() {
 
       {/* Avatar */}
       <View style={{ alignItems: "center", marginTop: 10 }}>
-        <Image
-          source={{ uri: profile.avatar || "https://i.imgur.com/2nCt3Sb.jpg" }}
-          style={{ width: 100, height: 100, borderRadius: 50 }}
-        />
-        <TouchableOpacity>
-          <Text style={{ color: "#0095f6", marginTop: 8 }}>
-            Change Profile Photo
+        <View style={{ position: "relative" }}>
+          <Image
+            source={{ uri: profile.avatar || "https://i.imgur.com/2nCt3Sb.jpg" }}
+            style={{ width: 100, height: 100, borderRadius: 50 }}
+          />
+          {uploadingAvatar && (
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: 50,
+                backgroundColor: "rgba(0,0,0,0.5)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <ActivityIndicator size="small" color="#fff" />
+            </View>
+          )}
+        </View>
+        <TouchableOpacity
+          onPress={handleChangeAvatar}
+          disabled={uploadingAvatar}
+          style={{ marginTop: 8 }}
+        >
+          <Text
+            style={{
+              color: uploadingAvatar ? "#999" : "#0095f6",
+              fontSize: 16,
+            }}
+          >
+            {uploadingAvatar ? "Uploading..." : "Change Profile Photo"}
           </Text>
         </TouchableOpacity>
       </View>

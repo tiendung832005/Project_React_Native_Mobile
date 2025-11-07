@@ -1,5 +1,6 @@
 import React from 'react'
-import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native'
+import { useRouter } from 'expo-router'
 import Icon from 'react-native-vector-icons/Ionicons'
 
 const categories = ['IGTV', 'Shop', 'Style', 'Sports', 'Auto']
@@ -20,17 +21,20 @@ const images = [
 ]
 
 export default function Search() {
+  const router = useRouter()
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" />
       {/* thanh tìm kiếm */}
-      <View style={styles.searchBar}>
+      <TouchableOpacity
+        style={styles.searchBar}
+        activeOpacity={0.8}
+        onPress={() => router.push('/search/friends')}
+      >
         <Icon name="search-outline" size={20} color="#666" style={{ marginRight: 6 }} />
-        <TextInput
-          placeholder="Search"
-          placeholderTextColor="#999"
-          style={styles.searchInput}
-        />
-      </View>
+        <Text style={styles.searchPlaceholder}>Search</Text>
+      </TouchableOpacity>
 
       {/* danh mục */}
       <ScrollView
@@ -55,7 +59,7 @@ export default function Search() {
         )}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -63,21 +67,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight || 0,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#efefef',
     marginHorizontal: 12,
+    marginTop: Platform.OS === 'ios' ? 10 : 10,
+    marginBottom: 10,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  searchInput: {
+  searchPlaceholder: {
     flex: 1,
     fontSize: 15,
-    color: '#333',
+    color: '#999',
   },
   categoryContainer: {
     flexDirection: 'row',

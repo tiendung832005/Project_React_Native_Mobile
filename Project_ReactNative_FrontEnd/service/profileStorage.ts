@@ -56,11 +56,16 @@ export const updateProfileLocally = async (updates: UpdateProfileData): Promise<
       };
     }
 
-    // Apply updates
+    // Apply updates - map avatarUrl to avatar
     const updatedProfile: User = {
       ...currentProfile,
       ...updates,
+      // Map avatarUrl to avatar if provided
+      avatar: updates.avatarUrl || currentProfile.avatar,
     };
+    
+    // Remove avatarUrl from updatedProfile as User interface uses 'avatar'
+    delete (updatedProfile as any).avatarUrl;
 
     // Save updated profile
     await saveProfileLocally(updatedProfile);
@@ -159,6 +164,81 @@ export const getUserProfile = async (): Promise<User> => {
     return apiProfile;
   } catch (error: any) {
     console.log('API failed, using local profile data:', error.message);
+    
+    // Check if it's a "User not found" error (404) or any 404
+    if (error.response?.status === 404) {
+      console.log('🔧 API returned 404 - User may not exist in database');
+      console.log('💡 This might happen if:');
+      console.log('   1. User was deleted from database');
+      console.log('   2. Token contains wrong email/userId');
+      console.log('   3. Database connection issue');
+      
+      // Try to extract user info from token
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        const token = await AsyncStorage.default.getItem('token');
+        
+        if (token) {
+          const parts = token.split('.');
+          if (parts.length !== 3) {
+            throw new Error('Invalid token format');
+          }
+          
+          const payload = JSON.parse(atob(parts[1]));
+          console.log('📋 Token payload:', {
+            userId: payload.userId,
+            sub: payload.sub,
+            email: payload.email,
+            username: payload.username,
+          });
+          
+          // Safely extract userId - can be string (email), number (ID), or null
+          const userId = payload.userId ?? payload.sub ?? null;
+          
+          // Extract email - userId might be email (string) or ID (number)
+          let email: string;
+          if (typeof userId === 'string' && userId.includes('@')) {
+            email = userId;
+          } else if (payload.email) {
+            email = payload.email;
+          } else if (payload.sub && typeof payload.sub === 'string' && payload.sub.includes('@')) {
+            email = payload.sub;
+          } else {
+            email = 'user@example.com';
+          }
+          
+          // Extract username
+          let username = payload.username;
+          if (!username) {
+            if (typeof userId === 'string' && userId.includes('@')) {
+              username = userId.split('@')[0];
+            } else if (email && email !== 'user@example.com') {
+              username = email.split('@')[0];
+            } else {
+              username = 'user';
+            }
+          }
+          
+          const profileFromToken: User = {
+            id: String(userId || email),
+            username: username,
+            email: email,
+            bio: 'Profile created from login token',
+            avatar: 'https://i.imgur.com/2nCt3Sb.jpg',
+            name: payload.username || username,
+          };
+          
+          console.log('✅ Created profile from token:', profileFromToken);
+          await saveProfileLocally(profileFromToken);
+          return profileFromToken;
+        } else {
+          console.log('❌ No token found in AsyncStorage');
+        }
+      } catch (tokenError: any) {
+        console.log('❌ Could not extract user from token:', tokenError.message || tokenError);
+        console.log('Error details:', tokenError);
+      }
+    }
     
     // Fallback to local storage
     const localProfile = await getProfileLocally();

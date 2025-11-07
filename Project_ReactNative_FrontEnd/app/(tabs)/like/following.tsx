@@ -1,227 +1,233 @@
-import React from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+  SafeAreaView,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { UserAvatar } from "../../../components/instagram";
+import { FriendService, Friend } from "../../../service/friendService";
+import { InstagramColors, Typography, Spacing } from "../../../constants/theme";
 
 /**
- * Tabs Like Following - "Following" tab trong like section
- * Đã được optimize với proper spacing và safe area
+ * Following Screen - Danh sách bạn bè (following)
  */
-export default function TabsLikeFollowingScreen() {
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+export default function FollowingScreen() {
+  const router = useRouter();
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadFriends = useCallback(async () => {
+    try {
+      const friendsList = await FriendService.getFriends();
+      setFriends(friendsList);
+    } catch (error: any) {
+      console.error("Error loading friends:", error);
+      Alert.alert("Error", error.message || "Failed to load friends");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFriends();
+  }, [loadFriends]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadFriends();
+  };
+
+  const handleUnfriend = async (friend: Friend) => {
+    Alert.alert(
+      "Unfriend",
+      `Are you sure you want to unfriend ${friend.username}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unfriend",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await FriendService.unfollowUser(friend.id);
+              setFriends((prev) => prev.filter((f) => f.id !== friend.id));
+              Alert.alert("Success", "Unfriended successfully");
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to unfriend");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const renderFriendItem = ({ item: friend }: { item: Friend }) => (
+    <View style={styles.friendItem}>
+      <TouchableOpacity
+        style={styles.friendInfo}
+        onPress={() => console.log("Navigate to profile:", friend.id)}
       >
-        {/* item 1 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/women/44.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>karenne </Text>liked 3 posts.
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-            <View style={styles.imageRow}>
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?1" }}
-                style={styles.postImage}
-              />
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?2" }}
-                style={styles.postImage}
-              />
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?3" }}
-                style={styles.postImage}
-              />
-            </View>
-          </View>
+        <UserAvatar
+          uri={friend.avatar || "https://i.imgur.com/2nCt3Sb.jpg"}
+          size="md"
+          hasStory={false}
+        />
+        <View style={styles.friendDetails}>
+          <Text style={styles.username}>{friend.username}</Text>
+          {friend.bio && <Text style={styles.bio}>{friend.bio}</Text>}
+          <Text style={styles.friendsSince}>
+            Friends since {new Date(friend.friendsSince).toLocaleDateString()}
+          </Text>
         </View>
+      </TouchableOpacity>
 
-        {/* item 2 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/11.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>kiero_d, zackjohn </Text>and{" "}
-              <Text style={styles.username}>craig_love </Text>
-              liked <Text style={styles.username}>joshua_l</Text>&apos;s photo.
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-          </View>
-          <Image
-            source={{ uri: "https://picsum.photos/100/100?4" }}
-            style={styles.thumbnail}
-          />
-        </View>
-
-        {/* item 3 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>kiero_d </Text>started following
-              <Text style={styles.username}> craig_love</Text>.
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-          </View>
-        </View>
-
-        {/* item 4 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/75.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>craig_love </Text>liked 8 posts.
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-            <View style={styles.imageRow}>
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?5" }}
-                style={styles.postImage}
-              />
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?6" }}
-                style={styles.postImage}
-              />
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?7" }}
-                style={styles.postImage}
-              />
-              <Image
-                source={{ uri: "https://picsum.photos/100/100?8" }}
-                style={styles.postImage}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* item 5 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/21.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>maxjacobson </Text>and{" "}
-              <Text style={styles.username}>zackjohn </Text>
-              liked <Text style={styles.username}>mis_potter</Text>&apos;s post.
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-          </View>
-          <Image
-            source={{ uri: "https://picsum.photos/100/100?9" }}
-            style={styles.thumbnail}
-          />
-        </View>
-
-        {/* item 6 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/11.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>maxjacobson </Text>and{" "}
-              <Text style={styles.username}>craig_love </Text>
-              liked <Text style={styles.username}>martini_rond</Text>&apos;s
-              post.
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-          </View>
-          <Image
-            source={{ uri: "https://picsum.photos/100/100?10" }}
-            style={styles.thumbnail}
-          />
-        </View>
-
-        {/* item 7 */}
-        <View style={styles.item}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/women/44.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.mainText}>
-              <Text style={styles.username}>karenne </Text>liked
-              <Text style={styles.username}> martini_rond</Text>&apos;s comment:
-              <Text style={styles.tag}> @martini_rond </Text>Nice!
-            </Text>
-            <Text style={styles.timeText}>3h</Text>
-          </View>
-        </View>
-      </ScrollView>
+      <TouchableOpacity
+        style={styles.unfriendButton}
+        onPress={() => handleUnfriend(friend)}
+      >
+        <Text style={styles.unfriendText}>Unfriend</Text>
+      </TouchableOpacity>
     </View>
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons
+        name="people-outline"
+        size={64}
+        color={InstagramColors.textSecondary}
+      />
+      <Text style={styles.emptyText}>No friends yet</Text>
+      <Text style={styles.emptySubtext}>
+        Start following people to see them here
+      </Text>
+    </View>
+  );
+
+  if (loading && friends.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={InstagramColors.info} />
+        <Text style={styles.loadingText}>Loading friends...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <FlatList
+        data={friends}
+        renderItem={renderFriendItem}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={renderEmpty}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[InstagramColors.info]}
+            tintColor={InstagramColors.info}
+          />
+        }
+        contentContainerStyle={
+          friends.length === 0 ? styles.emptyListContainer : undefined
+        }
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: InstagramColors.white,
   },
-  scrollContent: {
-    paddingTop: 10,
-    paddingBottom: 20, // Thêm bottom padding
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    marginBottom: 18,
-  },
-  avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    marginRight: 10,
-  },
-  textContainer: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: InstagramColors.white,
   },
-  mainText: {
-    fontSize: 14,
-    color: "#222",
-    flexWrap: "wrap",
+  loadingText: {
+    marginTop: Spacing.md,
+    fontSize: Typography.size.base,
+    color: InstagramColors.textSecondary,
+  },
+  friendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: InstagramColors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: InstagramColors.divider,
+  },
+  friendInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  friendDetails: {
+    flex: 1,
+    marginLeft: Spacing.md,
   },
   username: {
-    fontWeight: "bold",
+    fontSize: Typography.size.base,
+    fontWeight: Typography.weight.semibold,
+    color: InstagramColors.textPrimary,
+    marginBottom: Spacing.xs,
   },
-  tag: {
-    color: "#007bff",
+  bio: {
+    fontSize: Typography.size.sm,
+    color: InstagramColors.textSecondary,
+    marginBottom: Spacing.xs,
   },
-  timeText: {
-    color: "#888",
-    fontSize: 12,
-    marginTop: 3,
+  friendsSince: {
+    fontSize: Typography.size.xs,
+    color: InstagramColors.textTertiary,
   },
-  imageRow: {
-    flexDirection: "row",
-    marginTop: 6,
-  },
-  postImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 6,
-  },
-  thumbnail: {
-    width: 50,
-    height: 50,
+  unfriendButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: 6,
-    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: InstagramColors.border,
+  },
+  unfriendText: {
+    fontSize: Typography.size.sm,
+    color: InstagramColors.textPrimary,
+    fontWeight: Typography.weight.semibold,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Spacing["4xl"],
+    paddingVertical: Spacing["4xl"],
+  },
+  emptyListContainer: {
+    flexGrow: 1,
+  },
+  emptyText: {
+    fontSize: Typography.size.lg,
+    fontWeight: Typography.weight.semibold,
+    color: InstagramColors.textPrimary,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: Typography.size.base,
+    color: InstagramColors.textSecondary,
+    textAlign: "center",
+    lineHeight: Typography.size.base * 1.4,
   },
 });

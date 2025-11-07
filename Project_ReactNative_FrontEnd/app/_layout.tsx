@@ -53,6 +53,11 @@ export default function RootLayout() {
         }}
       />
 
+      {/* Post screens - Chi tiết bài viết và tạo bài viết */}
+      <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="post/create" options={{ headerShown: false }} />
+      <Stack.Screen name="post/comments" options={{ headerShown: false }} />
+
       {/* Các màn hình độc lập - Có thể navigate từ bất kỳ đâu */}
       <Stack.Screen name="igtv" options={{ headerShown: false }} />
       <Stack.Screen name="pictureShot" options={{ headerShown: false }} />

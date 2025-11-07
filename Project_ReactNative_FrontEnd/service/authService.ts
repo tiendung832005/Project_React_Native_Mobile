@@ -34,6 +34,7 @@ export interface UpdateProfileData {
   username?: string;
   email?: string;
   bio?: string;
+  avatarUrl?: string;
   name?: string;
   website?: string;
   phone?: string;
@@ -68,8 +69,19 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
 
 // Get current user info
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await api.get<User>('/users/me');
-  return response.data;
+  const response = await api.get<any>('/users/me');
+  // Map backend response (avatarUrl) to frontend format (avatar)
+  return {
+    id: String(response.data.id),
+    username: response.data.username,
+    email: response.data.email,
+    bio: response.data.bio,
+    avatar: response.data.avatarUrl || response.data.avatar,
+    name: response.data.name,
+    website: response.data.website,
+    phone: response.data.phone,
+    gender: response.data.gender,
+  };
 };
 
 // Logout - clear token
@@ -90,7 +102,27 @@ export const getToken = async (): Promise<string | null> => {
 
 // Update user profile
 export const updateProfile = async (data: UpdateProfileData): Promise<User> => {
-  const response = await api.put<User>('/users/me', data);
-  return response.data;
+  // Backend expects only avatarUrl and bio
+  const payload: { avatarUrl?: string; bio?: string } = {};
+  if (data.avatarUrl) {
+    payload.avatarUrl = data.avatarUrl;
+  }
+  if (data.bio !== undefined) {
+    payload.bio = data.bio;
+  }
+  
+  const response = await api.put<any>('/users/update', payload);
+  // Map backend response (avatarUrl) to frontend format (avatar)
+  return {
+    id: String(response.data.id),
+    username: response.data.username,
+    email: response.data.email,
+    bio: response.data.bio,
+    avatar: response.data.avatarUrl || response.data.avatar,
+    name: response.data.name,
+    website: response.data.website,
+    phone: response.data.phone,
+    gender: response.data.gender,
+  };
 };
 

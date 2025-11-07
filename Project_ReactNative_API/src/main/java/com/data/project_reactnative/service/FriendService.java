@@ -128,12 +128,35 @@ public class FriendService {
             throw new RuntimeException("Lời mời này đã được xử lý");
         }
 
-        // Cập nhật trạng thái và xóa
-        friendRequest.setStatus(FriendRequest.Status.REJECTED);
-        friendRequestRepository.save(friendRequest);
+        // Xóa lời mời
         friendRequestRepository.delete(friendRequest);
 
         return "Đã từ chối lời mời kết bạn";
+    }
+
+    // Hủy lời mời kết bạn đã gửi (cancel request)
+    @Transactional
+    public String cancelFriendRequest(Long senderId, Long receiverId) {
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new RuntimeException("Người gửi không tồn tại"));
+
+        User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new RuntimeException("Người nhận không tồn tại"));
+
+        // Tìm lời mời đang chờ từ sender đến receiver
+        FriendRequest friendRequest = friendRequestRepository
+                .findPendingRequestBySenderAndReceiver(senderId, receiverId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời kết bạn đang chờ"));
+
+        // Kiểm tra người gửi có phải là người gửi lời mời không
+        if (!friendRequest.getSender().getId().equals(senderId)) {
+            throw new RuntimeException("Bạn không có quyền hủy lời mời này");
+        }
+
+        // Xóa lời mời
+        friendRequestRepository.delete(friendRequest);
+
+        return "Đã hủy lời mời kết bạn";
     }
 
     // Hủy kết bạn

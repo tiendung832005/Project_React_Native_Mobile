@@ -16,7 +16,8 @@ import {
 export default function TabsLikeLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const current = String(segments[segments.length - 1]);
+  const currentSegment = String(segments[segments.length - 1]);
+  const current = currentSegment === "(tabs)" ? "like" : currentSegment;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -29,7 +30,7 @@ export default function TabsLikeLayout() {
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, current === "following" && styles.activeTab]}
-          onPress={() => router.push("./following")}
+          onPress={() => router.push("/(tabs)/like/following")}
         >
           <Text
             style={
@@ -47,7 +48,7 @@ export default function TabsLikeLayout() {
             styles.tab,
             (current === "index" || current === "like") && styles.activeTab,
           ]}
-          onPress={() => router.push("./")}
+          onPress={() => router.push("/(tabs)/like")}
         >
           <Text
             style={

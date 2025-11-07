@@ -21,6 +21,9 @@ public class Post {
     private String imageUrl;
     private String caption;
 
+    @Enumerated(EnumType.STRING)
+    private Privacy privacy = Privacy.PUBLIC;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -97,5 +100,18 @@ public class Post {
 
     public void setLikes(List<Like> likes) {
         this.likes = likes;
+    }
+
+    public Privacy getPrivacy() {
+        return privacy;
+    }
+
+    public void setPrivacy(Privacy privacy) {
+        this.privacy = privacy;
+    }
+
+    // Privacy enum
+    public enum Privacy {
+        PUBLIC, FRIENDS, PRIVATE
     }
 }
