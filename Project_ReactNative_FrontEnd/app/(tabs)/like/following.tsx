@@ -70,11 +70,16 @@ export default function FollowingScreen() {
     );
   };
 
+  const handleMessagePress = (friend: Friend) => {
+    router.push(`/messages/chat/${friend.id}`);
+  };
+
   const renderFriendItem = ({ item: friend }: { item: Friend }) => (
     <View style={styles.friendItem}>
       <TouchableOpacity
         style={styles.friendInfo}
-        onPress={() => console.log("Navigate to profile:", friend.id)}
+        onPress={() => handleMessagePress(friend)}
+        activeOpacity={0.7}
       >
         <UserAvatar
           uri={friend.avatar || "https://i.imgur.com/2nCt3Sb.jpg"}
@@ -90,12 +95,20 @@ export default function FollowingScreen() {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.unfriendButton}
-        onPress={() => handleUnfriend(friend)}
-      >
-        <Text style={styles.unfriendText}>Unfriend</Text>
-      </TouchableOpacity>
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity
+          style={styles.messageButton}
+          onPress={() => handleMessagePress(friend)}
+        >
+          <Ionicons name="chatbubble-outline" size={20} color={InstagramColors.info} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.unfriendButton}
+          onPress={() => handleUnfriend(friend)}
+        >
+          <Text style={styles.unfriendText}>Unfriend</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -194,6 +207,16 @@ const styles = StyleSheet.create({
   friendsSince: {
     fontSize: Typography.size.xs,
     color: InstagramColors.textTertiary,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  messageButton: {
+    padding: Spacing.sm,
+    borderRadius: 20,
+    backgroundColor: InstagramColors.background,
   },
   unfriendButton: {
     paddingHorizontal: Spacing.md,

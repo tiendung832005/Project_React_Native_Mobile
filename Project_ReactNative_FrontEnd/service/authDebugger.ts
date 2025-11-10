@@ -100,10 +100,15 @@ export class AuthDebugger {
    */
   static async testAPIConnection(): Promise<void> {
     try {
+      const { API_BASE_URL } = require('../constants/config');
       console.log('🌐 Testing API connection...');
+      console.log('🔗 API Base URL:', API_BASE_URL);
+      
+      // Extract base URL without /api for basic connectivity test
+      const baseUrl = API_BASE_URL.replace('/api', '');
       
       // Test a simple endpoint that doesn't require auth
-      const response = await fetch('http://192.168.1.237:8080/api/auth/test', {
+      const response = await fetch(`${API_BASE_URL}/auth/test`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +127,7 @@ export class AuthDebugger {
       } else {
         console.log('ℹ️  Testing basic connectivity...');
         // Fallback: just test if server is reachable
-        const basicTest = await fetch('http://192.168.1.237:8080/', {
+        const basicTest = await fetch(`${baseUrl}/`, {
           method: 'GET',
         });
         console.log('🔌 Server reachable:', basicTest.ok);
@@ -132,9 +137,10 @@ export class AuthDebugger {
       console.error('❌ API Connection Error:', error);
       console.log('💡 Possible issues:');
       console.log('  - Backend server not running');
-      console.log('  - Wrong IP address in config');
+      console.log('  - Wrong IP address in config.ts');
       console.log('  - Network connectivity issue');
       console.log('  - Firewall blocking connection');
+      console.log('  - Check constants/config.ts and update LOCAL_IP');
     }
   }
 
@@ -152,7 +158,8 @@ export class AuthDebugger {
 
       console.log('🔐 Testing authenticated endpoint...');
       
-      const response = await fetch('http://192.168.1.237:8080/api/users/me', {
+      const { API_BASE_URL } = require('../constants/config');
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

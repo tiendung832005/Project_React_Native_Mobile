@@ -14,7 +14,8 @@ import java.util.Optional;
 public interface FriendRequestRepository extends JpaRepository<FriendRequest, Long> {
 
     @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender.id = :senderId AND fr.receiver.id = :receiverId AND fr.status = 'PENDING'")
-    Optional<FriendRequest> findPendingRequestBySenderAndReceiver(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
+    Optional<FriendRequest> findPendingRequestBySenderAndReceiver(@Param("senderId") Long senderId,
+            @Param("receiverId") Long receiverId);
 
     @Query("SELECT fr FROM FriendRequest fr WHERE fr.receiver.id = :userId AND fr.status = 'PENDING'")
     List<FriendRequest> findPendingRequestsByReceiverId(@Param("userId") Long userId);
@@ -23,10 +24,15 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
     boolean existsPendingRequestBetweenUsers(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
     @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender.id = :userId AND fr.status = :status")
-    List<FriendRequest> findBySenderIdAndStatus(@Param("userId") Long userId, @Param("status") FriendRequest.Status status);
+    List<FriendRequest> findBySenderIdAndStatus(@Param("userId") Long userId,
+            @Param("status") FriendRequest.Status status);
 
     @Query("SELECT fr FROM FriendRequest fr WHERE fr.receiver.id = :userId AND fr.status = :status")
-    List<FriendRequest> findByReceiverIdAndStatus(@Param("userId") Long userId, @Param("status") FriendRequest.Status status);
+    List<FriendRequest> findByReceiverIdAndStatus(@Param("userId") Long userId,
+            @Param("status") FriendRequest.Status status);
+
+    @Query("SELECT COUNT(fr) FROM FriendRequest fr WHERE fr.receiver.id = :userId AND fr.status = 'PENDING'")
+    long countPendingRequestsByReceiverId(@Param("userId") Long userId);
 
     void deleteBySenderAndReceiver(User sender, User receiver);
 }

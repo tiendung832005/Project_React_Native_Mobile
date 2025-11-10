@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import React from "react";
+import { NotificationProvider } from "../context/NotificationContext";
 
 /**
  * Root Layout - Quản lý toàn bộ navigation của app
@@ -18,7 +19,8 @@ import React from "react";
  */
 export default function RootLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <NotificationProvider>
+      <Stack screenOptions={{ headerShown: false }}>
       {/* Auth guard - kiểm tra token và redirect */}
       <Stack.Screen
         name="index"
@@ -87,5 +89,6 @@ export default function RootLayout() {
         }}
       />
     </Stack>
+    </NotificationProvider>
   );
 }

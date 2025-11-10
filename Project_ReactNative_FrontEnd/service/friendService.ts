@@ -1,4 +1,5 @@
 import api from './api';
+import { normalizeImageUrl } from '../utils/imageUrlUtils';
 
 // Types cho Friend/Follow system
 export interface User {
@@ -75,14 +76,19 @@ interface BackendApiResponse<T> {
 }
 
 // Mappers
-const mapBackendUserToUser = (dto: BackendUserBasicDTO): User => ({
-  id: String(dto.id),
-  username: dto.username,
-  email: dto.email,
-  phone: dto.phone,
-  avatar: dto.avatarUrl,
-  bio: dto.bio,
-});
+const mapBackendUserToUser = (dto: BackendUserBasicDTO): User => {
+  // Normalize avatar URL to use current IP from config
+  const normalizedAvatar = normalizeImageUrl(dto.avatarUrl);
+  
+  return {
+    id: String(dto.id),
+    username: dto.username,
+    email: dto.email,
+    phone: dto.phone,
+    avatar: normalizedAvatar,
+    bio: dto.bio,
+  };
+};
 
 const mapBackendFriendRequestToFollowRequest = (dto: BackendFriendRequestDTO): FollowRequest => ({
   id: String(dto.id),
@@ -92,15 +98,20 @@ const mapBackendFriendRequestToFollowRequest = (dto: BackendFriendRequestDTO): F
   createdAt: dto.createdAt,
 });
 
-const mapBackendFriendToFriend = (dto: BackendFriendDTO): Friend => ({
-  id: String(dto.id),
-  username: dto.username,
-  email: dto.email,
-  phone: dto.phone,
-  avatar: dto.avatarUrl,
-  bio: dto.bio,
-  friendsSince: dto.friendsSince,
-});
+const mapBackendFriendToFriend = (dto: BackendFriendDTO): Friend => {
+  // Normalize avatar URL to use current IP from config
+  const normalizedAvatar = normalizeImageUrl(dto.avatarUrl);
+  
+  return {
+    id: String(dto.id),
+    username: dto.username,
+    email: dto.email,
+    phone: dto.phone,
+    avatar: normalizedAvatar,
+    bio: dto.bio,
+    friendsSince: dto.friendsSince,
+  };
+};
 
 /**
  * Friend/Follow Service
@@ -195,6 +206,19 @@ export class FriendService {
       return (response.data.requests || []).map(mapBackendFriendRequestToFollowRequest);
     } catch (error: any) {
       console.error('Error getting pending follow requests:', error);
+      // Log detailed error information
+      if (error.response) {
+        console.error('Response error:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('Request error - Backend may not be running or CORS issue:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      // Return empty array on network error instead of throwing
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        console.warn('Network error - returning empty array. Make sure backend is running.');
+        return [];
+      }
       throw new Error(error.response?.data?.message || 'Failed to get follow requests');
     }
   }

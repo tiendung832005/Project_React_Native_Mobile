@@ -269,6 +269,11 @@ public class FriendService {
         return "Đã bỏ chặn người dùng";
     }
 
+    // Đếm số lời mời kết bạn đang chờ
+    public long countPendingFriendRequests(Long userId) {
+        return friendRequestRepository.countPendingRequestsByReceiverId(userId);
+    }
+
     // Helper methods
     private UserBasicDTO convertToUserBasicDTO(User user) {
         return new UserBasicDTO(

@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import { Platform, BackHandler } from "react-native";
+import { TabIconWithBadge } from "../../components/TabIconWithBadge";
+import { useNotifications } from "../../context/NotificationContext";
 
 /**
  * Main Tabs Layout - Bottom Navigation Bar
@@ -12,9 +14,11 @@ import { Platform, BackHandler } from "react-native";
  * - Custom back handler để prevent app exit
  * - Tab bar styling theo design Instagram
  * - Ẩn một số màn hình khỏi tab bar nhưng vẫn accessible
+ * - Badge notifications cho likes tab (friend requests) và messages
  */
 export default function TabsLayout() {
   const router = useRouter();
+  const { counts } = useNotifications();
 
   // Custom back handler cho Android để prevent app exit
   useEffect(() => {
@@ -106,16 +110,19 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Likes Tab - Có sub-navigation */}
+      {/* Likes Tab - Có sub-navigation và badge cho friend requests */}
       <Tabs.Screen
         name="like"
         options={{
           title: "Likes",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "heart" : "heart-outline"}
-              size={size ?? 24}
+            <TabIconWithBadge
+              name="heart-outline"
+              focusedName="heart"
               color={color}
+              size={size ?? 24}
+              focused={focused}
+              badgeCount={counts.friendRequestCount > 0 ? counts.friendRequestCount : undefined}
             />
           ),
         }}

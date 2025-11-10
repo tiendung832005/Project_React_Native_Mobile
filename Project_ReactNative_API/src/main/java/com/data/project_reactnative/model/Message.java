@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 public class Message {
@@ -22,6 +23,13 @@ public class Message {
 
     private String content;
 
+    private String imageUrl;
+
+    private String videoUrl;
+
+    @Enumerated(EnumType.STRING)
+    private MessageType type = MessageType.TEXT;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -30,6 +38,9 @@ public class Message {
     @ManyToOne
     @JoinColumn(name = "chat_id")
     private Chat chat;
+
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MessageReaction> reactions;
 
     // Getters and Setters
 
@@ -87,5 +98,37 @@ public class Message {
 
     public void setChat(Chat chat) {
         this.chat = chat;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
+    }
+
+    public MessageType getType() {
+        return type;
+    }
+
+    public void setType(MessageType type) {
+        this.type = type;
+    }
+
+    public List<MessageReaction> getReactions() {
+        return reactions;
+    }
+
+    public void setReactions(List<MessageReaction> reactions) {
+        this.reactions = reactions;
     }
 }

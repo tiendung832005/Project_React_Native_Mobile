@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     FlatList,
     Image,
@@ -8,95 +8,112 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    RefreshControl,
+    ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { MessageService, Conversation } from '../../service/messageService';
+import UserAvatar from '../../components/instagram/UserAvatar';
+import { InstagramColors, Typography, Spacing } from '../../constants/theme';
+import { useNotifications } from '../../context/NotificationContext';
 
-const messagesData = [
-  {
-    id: '1',
-    name: 'joshua_l',
-    message: 'Have a nice day, bro!',
-    time: 'now',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-  },
-  {
-    id: '2',
-    name: 'karennne',
-    message: 'I heard this is a good movie, so...',
-    time: 'now',
-    avatar: 'https://randomuser.me/api/portraits/women/10.jpg',
-  },
-  {
-    id: '3',
-    name: 'martini_rond',
-    message: 'See you on the next meeting!',
-    time: '15m',
-    avatar: 'https://randomuser.me/api/portraits/men/12.jpg',
-  },
-  {
-    id: '4',
-    name: 'andrewww_',
-    message: 'Sounds good 😂😂😂',
-    time: '20m',
-    avatar: 'https://randomuser.me/api/portraits/men/18.jpg',
-  },
-  {
-    id: '5',
-    name: 'kiero_d',
-    message: 'The new design looks cool, btw!',
-    time: '1h',
-    avatar: 'https://randomuser.me/api/portraits/men/25.jpg',
-  },
-  {
-    id: '6',
-    name: 'maxjacobson',
-    message: 'Thank you, bro!',
-    time: '2h',
-    avatar: 'https://randomuser.me/api/portraits/men/41.jpg',
-  },
-  {
-    id: '7',
-    name: 'jamie.franco',
-    message: "Yep, I'm going to travel in Tokyo",
-    time: '4h',
-    avatar: 'https://randomuser.me/api/portraits/women/31.jpg',
-  },
-  {
-    id: '8',
-    name: 'm_humphrey',
-    message: 'Instagram UI is pretty good',
-    time: '5h',
-    avatar: 'https://randomuser.me/api/portraits/women/22.jpg',
-  },
-];
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d`;
+  return date.toLocaleDateString();
+}
 
 export default function Messages() {
-  const renderItem = ({ item }: any) => (
-    <TouchableOpacity style={styles.chatItem}>
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+  const router = useRouter();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { refreshCounts } = useNotifications();
+
+  const loadConversations = useCallback(async () => {
+    try {
+      const data = await MessageService.getConversations();
+      setConversations(data);
+      // Refresh notification counts after loading conversations
+      await refreshCounts();
+    } catch (error: any) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [refreshCounts]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadConversations();
+  }, [loadConversations]);
+
+  const filteredConversations = conversations.filter((conv) =>
+    conv.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderItem = ({ item }: { item: Conversation }) => (
+    <TouchableOpacity
+      style={styles.chatItem}
+      onPress={() => router.push(`/messages/chat/${item.userId}`)}
+    >
+      <UserAvatar
+        uri={item.avatarUrl || "https://i.imgur.com/2nCt3Sb.jpg"}
+        size="md"
+        hasStory={false}
+      />
       <View style={styles.messageInfo}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.message} numberOfLines={1}>
-          {item.message}
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{item.username}</Text>
+          {item.hasUnread && <View style={styles.unreadDot} />}
+        </View>
+        <Text style={[styles.message, item.hasUnread && styles.unreadMessage]} numberOfLines={1}>
+          {item.lastMessage || 'No messages yet'}
         </Text>
       </View>
-      <Text style={styles.time}>· {item.time}</Text>
-      <Image
-        source={{
-          uri: 'https://cdn-icons-png.flaticon.com/512/54/54667.png',
-        }}
-        style={styles.cameraIcon}
-      />
+      <Text style={styles.time}>{formatTimeAgo(item.lastMessageTime)}</Text>
     </TouchableOpacity>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.backArrow}>{'<'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.username}>Messages</Text>
+          <TouchableOpacity>
+            <Text style={styles.plusIcon}>＋</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={InstagramColors.info} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backArrow}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={styles.username}>jacob_w</Text>
+        <Text style={styles.username}>Messages</Text>
         <TouchableOpacity>
           <Text style={styles.plusIcon}>＋</Text>
         </TouchableOpacity>
@@ -104,77 +121,132 @@ export default function Messages() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <TextInput placeholder="Search" placeholderTextColor="#888" style={styles.searchInput} />
+        <TextInput
+          placeholder="Search"
+          placeholderTextColor="#888"
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
 
       {/* Messages List */}
       <FlatList
-        data={messagesData}
-        keyExtractor={(item) => item.id}
+        data={filteredConversations}
+        keyExtractor={(item) => item.userId}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No conversations yet</Text>
+          </View>
+        }
       />
-
-      {/* Bottom Camera Bar */}
-      <View style={styles.footer}>
-        <TouchableOpacity>
-          <Text style={styles.cameraButton}>📷 Camera</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: InstagramColors.white },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 0.5,
+    borderBottomColor: InstagramColors.border,
   },
-  backArrow: { fontSize: 20, color: '#000' },
-  username: { fontWeight: 'bold', fontSize: 18, color: '#000' },
-  plusIcon: { fontSize: 24, color: '#000' },
+  backArrow: {
+    fontSize: 24,
+    color: InstagramColors.textPrimary,
+    fontWeight: 'bold',
+  },
+  username: {
+    fontWeight: Typography.weight.bold,
+    fontSize: Typography.size.lg,
+    color: InstagramColors.textPrimary,
+  },
+  plusIcon: {
+    fontSize: 24,
+    color: InstagramColors.textPrimary,
+  },
 
   searchContainer: {
-    backgroundColor: '#f2f2f2',
-    marginHorizontal: 16,
+    backgroundColor: InstagramColors.background,
+    marginHorizontal: Spacing.lg,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
-  searchInput: { color: '#000', fontSize: 14 },
+  searchInput: {
+    color: InstagramColors.textPrimary,
+    fontSize: Typography.size.base,
+  },
 
   chatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 0.3,
-    borderBottomColor: '#ddd',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 0.5,
+    borderBottomColor: InstagramColors.border,
   },
-  avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 10 },
-  messageInfo: { flex: 1 },
-  name: { fontWeight: '600', fontSize: 15, color: '#000' },
-  message: { color: '#666', fontSize: 13, marginTop: 2 },
-  time: { color: '#999', fontSize: 12, marginRight: 8 },
-  cameraIcon: { width: 20, height: 20, tintColor: '#aaa' },
-
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 0.5,
-    borderTopColor: '#ddd',
-    backgroundColor: '#fff',
+  messageInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
   },
-  cameraButton: { color: '#007AFF', fontSize: 16 },
+  name: {
+    fontWeight: Typography.weight.semibold,
+    fontSize: Typography.size.base,
+    color: InstagramColors.textPrimary,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: InstagramColors.info,
+    marginLeft: Spacing.xs,
+  },
+  message: {
+    color: InstagramColors.textSecondary,
+    fontSize: Typography.size.sm,
+    marginTop: 2,
+  },
+  unreadMessage: {
+    fontWeight: Typography.weight.semibold,
+    color: InstagramColors.textPrimary,
+  },
+  time: {
+    color: InstagramColors.textSecondary,
+    fontSize: Typography.size.xs,
+    marginLeft: Spacing.sm,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  emptyText: {
+    color: InstagramColors.textSecondary,
+    fontSize: Typography.size.base,
+  },
 });
 

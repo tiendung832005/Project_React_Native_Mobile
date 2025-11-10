@@ -21,6 +21,7 @@ import {
   Spacing,
   Shadows,
 } from "../../constants/theme";
+import { useNotifications } from "../../context/NotificationContext";
 
 const storiesData = [
   {
@@ -62,6 +63,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const { counts: { unreadMessageCount } } = useNotifications();
 
   // Load posts từ API
   const loadPosts = useCallback(
@@ -252,11 +254,20 @@ export default function HomeScreen() {
             style={styles.headerButton}
             onPress={() => router.push("/(tabs)/messages")}
           >
-            <Feather
-              name="send"
-              size={24}
-              color={InstagramColors.textPrimary}
-            />
+            <View style={styles.messageButtonContainer}>
+              <Feather
+                name="send"
+                size={24}
+                color={InstagramColors.textPrimary}
+              />
+              {unreadMessageCount > 0 && (
+                <View style={styles.messageBadge}>
+                  <Text style={styles.messageBadgeText}>
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -319,6 +330,34 @@ const styles = StyleSheet.create({
 
   headerButton: {
     padding: Spacing.xs,
+  },
+
+  messageButtonContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  messageBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#FF3040',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+
+  messageBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 
   logo: {

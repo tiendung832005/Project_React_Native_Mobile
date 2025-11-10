@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Platform,
 } from "react-native";
+import { useNotifications } from "../../../context/NotificationContext";
 
 /**
  * Tabs Like Layout - Like section trong main tabs
@@ -18,6 +19,7 @@ export default function TabsLikeLayout() {
   const segments = useSegments();
   const currentSegment = String(segments[segments.length - 1]);
   const current = currentSegment === "(tabs)" ? "like" : currentSegment;
+  const { counts } = useNotifications();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,15 +52,24 @@ export default function TabsLikeLayout() {
           ]}
           onPress={() => router.push("/(tabs)/like")}
         >
-          <Text
-            style={
-              current === "index" || current === "like"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
-          >
-            You
-          </Text>
+          <View style={styles.tabContent}>
+            <Text
+              style={
+                current === "index" || current === "like"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              You
+            </Text>
+            {counts.friendRequestCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {counts.friendRequestCount > 99 ? '99+' : counts.friendRequestCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -112,6 +123,25 @@ const styles = StyleSheet.create({
   tabTextInactive: {
     fontSize: 16,
     color: "#888",
+  },
+  tabContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  badge: {
+    backgroundColor: "#FF3040",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "bold",
   },
   content: {
     flex: 1,

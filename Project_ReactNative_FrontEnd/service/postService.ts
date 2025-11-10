@@ -1,4 +1,5 @@
 import api from './api';
+import { normalizeImageUrl } from '../utils/imageUrlUtils';
 
 export interface User {
   id: string;
@@ -104,16 +105,20 @@ const mapBackendPostToPost = (data: BackendPostResponse): Post => {
     ? data.updatedAt 
     : (data.updatedAt as any)?.toString() || new Date().toISOString();
 
+  // Normalize image URLs to use current IP from config
+  const normalizedImageUrl = normalizeImageUrl(data.imageUrl);
+  const normalizedAvatarUrl = normalizeImageUrl(data.userAvatarUrl);
+
   return {
     id: String(data.id),
     content: data.caption ?? '',
-    imageUrl: data.imageUrl ?? undefined,
+    imageUrl: normalizedImageUrl,
     createdAt,
     updatedAt,
     author: {
       id: String(data.userId),
       username: data.username || 'Unknown',
-      avatar: data.userAvatarUrl ?? undefined,
+      avatar: normalizedAvatarUrl,
     },
     likesCount: data.likesCount ?? 0,
     commentsCount: data.commentsCount ?? 0,
@@ -123,19 +128,24 @@ const mapBackendPostToPost = (data: BackendPostResponse): Post => {
   };
 };
 
-const mapBackendCommentToComment = (data: BackendCommentResponse): Comment => ({
-  id: String(data.id),
-  postId: String(data.postId),
-  content: data.content,
-  createdAt: data.createdAt,
-  author: {
-    id: String(data.userId),
-    username: data.username,
-    avatar: data.userAvatarUrl ?? undefined,
-  },
-  likesCount: 0,
-  isLiked: false,
-});
+const mapBackendCommentToComment = (data: BackendCommentResponse): Comment => {
+  // Normalize avatar URL to use current IP from config
+  const normalizedAvatarUrl = normalizeImageUrl(data.userAvatarUrl);
+
+  return {
+    id: String(data.id),
+    postId: String(data.postId),
+    content: data.content,
+    createdAt: data.createdAt,
+    author: {
+      id: String(data.userId),
+      username: data.username,
+      avatar: normalizedAvatarUrl,
+    },
+    likesCount: 0,
+    isLiked: false,
+  };
+};
 
 export class PostService {
   /**

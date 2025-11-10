@@ -14,6 +14,7 @@ import {
 import { login, LoginData } from "../../service/authService";
 import { AuthDebugger } from "../../service/authDebugger";
 import { NavigationActions } from "../../navigation";
+import { API_BASE_URL } from "../../constants/config";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function LoginScreen() {
     try {
       console.log("🚀 Starting login process...");
       console.log("📧 Email:", email);
-      console.log("🔗 API URL:", "http://192.168.1.237:8080/api");
+      console.log("🔗 API URL:", API_BASE_URL);
 
       const data: LoginData = { email, password };
       const response = await login(data);

@@ -1,5 +1,6 @@
 import api from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { normalizeImageUrl } from '../utils/imageUrlUtils';
 
 export interface RegisterData {
   username: string;
@@ -71,12 +72,16 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
 export const getCurrentUser = async (): Promise<User> => {
   const response = await api.get<any>('/users/me');
   // Map backend response (avatarUrl) to frontend format (avatar)
+  // Normalize avatar URL to use current IP from config
+  const avatarUrl = response.data.avatarUrl || response.data.avatar;
+  const normalizedAvatar = normalizeImageUrl(avatarUrl);
+  
   return {
     id: String(response.data.id),
     username: response.data.username,
     email: response.data.email,
     bio: response.data.bio,
-    avatar: response.data.avatarUrl || response.data.avatar,
+    avatar: normalizedAvatar,
     name: response.data.name,
     website: response.data.website,
     phone: response.data.phone,
@@ -113,12 +118,16 @@ export const updateProfile = async (data: UpdateProfileData): Promise<User> => {
   
   const response = await api.put<any>('/users/update', payload);
   // Map backend response (avatarUrl) to frontend format (avatar)
+  // Normalize avatar URL to use current IP from config
+  const avatarUrl = response.data.avatarUrl || response.data.avatar;
+  const normalizedAvatar = normalizeImageUrl(avatarUrl);
+  
   return {
     id: String(response.data.id),
     username: response.data.username,
     email: response.data.email,
     bio: response.data.bio,
-    avatar: response.data.avatarUrl || response.data.avatar,
+    avatar: normalizedAvatar,
     name: response.data.name,
     website: response.data.website,
     phone: response.data.phone,

@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { UserAvatar } from "../../../components/instagram";
 import { FriendService, FollowRequest } from "../../../service/friendService";
 import { InstagramColors, Spacing, Typography } from "../../../constants/theme";
+import { useNotifications } from "../../../context/NotificationContext";
 
 /**
  * Tabs Like Index - "You" tab trong like section
@@ -27,6 +28,7 @@ export default function TabsLikeYouScreen() {
   const [processingRequests, setProcessingRequests] = useState<
     Record<string, boolean>
   >({});
+  const { refreshCounts } = useNotifications();
 
   const loadFollowRequests = useCallback(async () => {
     try {
@@ -62,6 +64,8 @@ export default function TabsLikeYouScreen() {
       await FriendService.acceptFollowRequest(request.id);
       // Remove request from list
       setFollowRequests((prev) => prev.filter((r) => r.id !== request.id));
+      // Refresh notification counts
+      await refreshCounts();
     } catch (error: any) {
       Alert.alert("Error", error.message);
     } finally {
@@ -78,6 +82,8 @@ export default function TabsLikeYouScreen() {
       await FriendService.rejectFollowRequest(request.id);
       // Remove request from list
       setFollowRequests((prev) => prev.filter((r) => r.id !== request.id));
+      // Refresh notification counts
+      await refreshCounts();
     } catch (error: any) {
       Alert.alert("Error", error.message);
     } finally {
